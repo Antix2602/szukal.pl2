@@ -151,7 +151,7 @@
 
       document.getElementById("results").innerHTML = "⏳ Szukanie...";
       try {
-        const response = await fetch(`http://localhost:5000/search?q=${encodeURIComponent(query)}`);
+        const response = await fetch(`https://szukal-pl-4.onrender.com${encodeURIComponent(query)}`);
         const data = await response.json();
 
         if (!data.length) {
@@ -203,6 +203,7 @@
   </script>
 </body>
 </html>
+
 
 
 
