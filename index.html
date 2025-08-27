@@ -2,97 +2,209 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>szukaj.pl</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Szukaj.pl</title>
   <style>
     body {
+      margin: 0;
       font-family: Arial, sans-serif;
-      background: #111;
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
       color: white;
-      text-align: center;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       padding: 20px;
+      transition: background 0.4s, color 0.4s;
     }
+
+    body.light {
+      background: #f8f8f8;
+      color: #222;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin: 20px 0;
+      text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+    }
+
     .search-box {
-      margin: 30px auto;
-      width: 50%;
+      position: relative;
+      width: 100%;
+      max-width: 600px;
     }
-    input {
-      width: 70%;
-      padding: 15px;
-      border-radius: 25px;
+
+    input[type="text"] {
+      width: 100%;
+      padding: 14px 20px;
       border: none;
-      font-size: 18px;
+      border-radius: 30px;
+      font-size: 1rem;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      outline: none;
     }
-    button {
-      padding: 15px 25px;
-      margin-left: 10px;
-      border: none;
-      border-radius: 25px;
-      background: #ff4d4d;
-      color: white;
+
+    .suggestions {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border-radius: 0 0 15px 15px;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+      z-index: 10;
+    }
+
+    .suggestions div {
+      padding: 10px;
       cursor: pointer;
-      font-size: 18px;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .suggestions div:hover {
+      background: #f0f0f0;
+    }
+
+    button {
+      margin-left: 10px;
+      padding: 12px 20px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 30px;
+      cursor: pointer;
+      background: #ff9800;
+      color: white;
       transition: 0.3s;
     }
+
     button:hover {
-      background: #ff1a1a;
-      transform: scale(1.1);
+      background: #e68900;
     }
+
+    .theme-toggle {
+      margin-top: 20px;
+      cursor: pointer;
+      padding: 8px 15px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.2);
+      font-size: 0.9rem;
+      transition: 0.3s;
+    }
+
+    .theme-toggle:hover {
+      background: rgba(255,255,255,0.4);
+    }
+
+    .results {
+      width: 100%;
+      max-width: 800px;
+      margin-top: 30px;
+    }
+
     .result {
       background: white;
-      color: black;
-      padding: 15px;
-      border-radius: 10px;
-      margin: 15px auto;
-      width: 70%;
-      text-align: left;
-      animation: fadeIn 0.6s;
+      color: #222;
+      border-radius: 15px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      transition: transform 0.2s;
     }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+
+    .result:hover {
+      transform: translateY(-3px);
+    }
+
+    .result a {
+      text-decoration: none;
+      color: #1a0dab;
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+
+    .result p {
+      margin: 10px 0 0;
+      font-size: 0.95rem;
+      color: #555;
     }
   </style>
 </head>
 <body>
-  <h1>🔍 szukaj.pl</h1>
+  <h1>🔍 Szukaj.pl</h1>
   <div class="search-box">
-    <input type="text" id="query" placeholder="Wpisz zapytanie...">
-    <button onclick="search()">Szukaj</button>
+    <input type="text" id="query" placeholder="Wpisz zapytanie..." oninput="showSuggestions(this.value)">
+    <div class="suggestions" id="suggestions"></div>
   </div>
-  <div id="results"></div>
+  <button onclick="search()">Szukaj</button>
+
+  <div class="theme-toggle" onclick="toggleTheme()">🌙 Zmień tryb</div>
+
+  <div class="results" id="results"></div>
 
   <script>
     async function search() {
       const query = document.getElementById("query").value;
-      const resultsDiv = document.getElementById("results");
-      resultsDiv.innerHTML = "⏳ Szukanie...";
+      if (!query) return;
 
+      document.getElementById("results").innerHTML = "⏳ Szukanie...";
       try {
-        const res = await fetch("https://szukal-pl-3.onrender.com" + encodeURIComponent(query));
-        const data = await res.json();
+        const response = await fetch(`http://localhost:5000/search?q=${encodeURIComponent(query)}`);
+        const data = await response.json();
 
-        if (data.items) {
-          resultsDiv.innerHTML = "";
-          data.items.forEach(item => {
-            const div = document.createElement("div");
-            div.classList.add("result");
-            div.innerHTML = `
-              <h3><a href="${item.link}" target="_blank">${item.title}</a></h3>
-              <p>${item.snippet}</p>
-              <small>${item.link}</small>
-            `;
-            resultsDiv.appendChild(div);
-          });
-        } else {
-          resultsDiv.innerHTML = "⚠️ Brak wyników dla \"" + query + "\"";
+        if (!data.length) {
+          document.getElementById("results").innerHTML = `<p>❌ Brak wyników dla "${query}"</p>`;
+          return;
         }
-      } catch (err) {
-        resultsDiv.innerHTML = "❌ Błąd pobierania wyników.";
+
+        const html = data.map(item => `
+          <div class="result">
+            <a href="${item.link}" target="_blank">${item.title}</a>
+            <p>${item.snippet}</p>
+          </div>
+        `).join("");
+        document.getElementById("results").innerHTML = html;
+
+      } catch (e) {
+        document.getElementById("results").innerHTML = `<p>❌ Błąd pobierania wyników.</p>`;
       }
+    }
+
+    function toggleTheme() {
+      document.body.classList.toggle("light");
+    }
+
+    function showSuggestions(value) {
+      const suggestionsBox = document.getElementById("suggestions");
+      const suggestions = ["Minecraft", "Kosmita", "Strój kosmity", "AI news", "Python tutorial", "Flask backend"];
+
+      if (!value) {
+        suggestionsBox.style.display = "none";
+        return;
+      }
+
+      const filtered = suggestions.filter(s => s.toLowerCase().includes(value.toLowerCase()));
+      if (!filtered.length) {
+        suggestionsBox.style.display = "none";
+        return;
+      }
+
+      suggestionsBox.innerHTML = filtered.map(s => `<div onclick="chooseSuggestion('${s}')">${s}</div>`).join("");
+      suggestionsBox.style.display = "block";
+    }
+
+    function chooseSuggestion(text) {
+      document.getElementById("query").value = text;
+      document.getElementById("suggestions").style.display = "none";
+      search();
     }
   </script>
 </body>
 </html>
+
+
 
 
 
