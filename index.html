@@ -68,7 +68,7 @@
       resultsDiv.innerHTML = "⏳ Szukanie...";
 
       try {
-        const res = await fetch("https://TWOJA-NAZWA-NA-RENDER.onrender.com/search?q=" + encodeURIComponent(query));
+        const res = await fetch("https://szukal-pl-3.onrender.com" + encodeURIComponent(query));
         const data = await res.json();
 
         if (data.items) {
@@ -93,6 +93,7 @@
   </script>
 </body>
 </html>
+
 
 
 
